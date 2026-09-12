@@ -1,15 +1,24 @@
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 
 async function postJSON(path, body) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    throw new Error(`${path} failed: ${res.status} ${await res.text()}`);
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      throw new Error(`${path} failed: ${res.status} ${await res.text()}`);
+    }
+    return res.json();
+  } catch (err) {
+    if (err.name === "TypeError" && err.message.toLowerCase().includes("fetch")) {
+      throw new Error(
+        `Cannot connect to backend at ${API_BASE}. If using Render (free tier), it may be waking up from sleep (~30s). Also ensure VITE_API_BASE is set in Vercel Environment Variables.`
+      );
+    }
+    throw err;
   }
-  return res.json();
 }
 
 export function fileToBase64(file) {
