@@ -41,7 +41,24 @@ def _decode_image(image_base64: str) -> np.ndarray:
         image_base64 = image_base64.split(",", 1)[1]
     raw = base64.b64decode(image_base64)
     arr = np.frombuffer(raw, dtype=np.uint8)
-    return cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    # Resize very large images to max 1280px to keep memory footprint under 300MB on Render
+    h, w = img.shape[:2]
+    max_dim = max(h, w)
+    if max_dim > 1280:
+        scale = 1280.0 / max_dim
+        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+    return img
+
+
+@app.on_event("startup")
+def startup_event():
+    # Pre-load YOLO model during boot so user requests are instantaneous
+    try:
+        from app.inference import get_model
+        get_model()
+    except Exception as e:
+        print("Model pre-warm note:", e)
 
 
 @app.get("/health")

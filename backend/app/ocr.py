@@ -13,9 +13,13 @@ _MAX_PLATE_CHARS = 8
 def get_reader():
     global _reader
     if _reader is None:
-        import easyocr
-        _reader = easyocr.Reader(["en"], gpu=False)
-    return _reader
+        try:
+            import easyocr
+            _reader = easyocr.Reader(["en"], gpu=False)
+        except Exception as e:
+            print("OCR init note:", e)
+            _reader = False
+    return _reader if _reader is not False else None
 
 
 def looks_like_plate(text: str) -> bool:
@@ -32,13 +36,18 @@ def looks_like_plate(text: str) -> bool:
 
 def read_plate_text(crop: np.ndarray) -> Tuple[Optional[str], Optional[float]]:
     reader = get_reader()
-    results = reader.readtext(crop)
-
-    plate_candidates = [r for r in results if looks_like_plate(r[1])]
-    if not plate_candidates:
+    if not reader:
         return None, None
+    try:
+        results = reader.readtext(crop)
+        plate_candidates = [r for r in results if looks_like_plate(r[1])]
+        if not plate_candidates:
+            return None, None
 
-    best = max(plate_candidates, key=lambda r: r[2])
-    text = best[1].strip().upper()
-    confidence = float(best[2])
-    return text, confidence
+        best = max(plate_candidates, key=lambda r: r[2])
+        text = best[1].strip().upper()
+        confidence = float(best[2])
+        return text, confidence
+    except Exception as e:
+        print("OCR read error:", e)
+        return None, None

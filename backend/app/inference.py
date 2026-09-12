@@ -3,9 +3,13 @@ import uuid
 from typing import List
 
 import numpy as np
+import torch
 from ultralytics import YOLO
 
 from app.schemas import Detection
+
+# Limit CPU threads to prevent memory spikes on Render free tier (512MB RAM)
+torch.set_num_threads(1)
 
 def _resolve_model_path() -> str:
     env_path = os.environ.get("YOLO_MODEL_PATH")
@@ -40,11 +44,14 @@ def detect_vehicles(
     iou_threshold: float = 0.45,
 ) -> List[Detection]:
     model = get_model()
+    # Explicit cpu device and imgsz=640 ensures fast, lightweight execution on Render
     results = model.predict(
         image,
         conf=conf_threshold,
         iou=iou_threshold,
         agnostic_nms=True,
+        imgsz=640,
+        device="cpu",
         verbose=False,
     )[0]
 
