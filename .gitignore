@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/datasets/
+backend/datasets
+backend/models/*.pt
+!backend/models/.gitkeep
+!backend/models/parking_yolov8.pt
+backend/runs/
+backend/weights/
+backend/yolov8n.pt
+.venv/
+node_modules/
+frontend/dist/
+.env
+*.log
